@@ -1,0 +1,59 @@
+---
+title: "Hierarchical Clustering"
+output: html_notebook
+---
+
+Use Eng_colg_Data. Here we have data of 26 colleges collected after Survey Research using questionnaires.
+As it is evident, the initial data has been analyzed and aggregated to an average rating for each college.
+The ratings are in the standardized scale of 1 to 5 where 5 has a higher weightage than 1.Use your best judgment and build the Clustering Model on this data.
+ 
+The Report should be properly formatted and should include the following :-
+What do you make out of the given data?
+What will be your approach to solve this problem? (you are advised to give supporting arguments for the methodology you are going to use)
+What are the findings? ( visualize your clusters, screen-shot of your output)
+Interpretation of your findings 
+Appendix: Paste the code at the end
+
+```{r}
+setwd("C:\\Users\\jyoti\\OneDrive\\Documents\\PGPBABI\\Data Mining\\clustering_LMS")
+engdata <- read.csv("Engg_College_Data.csv", header=TRUE)
+engdata$SR_NO = NULL
+View(engdata)
+```
+
+##Calculate euclidean distance
+```{r}
+d_euc <- dist(x=engdata[,3:6], method = "euclidean") 
+print(d_euc, digits = 3)
+```
+
+
+##Use hierarchical clustering
+```{r}
+clus1 <- hclust(d_euc, method = "average")
+plot(clus1, labels = as.character(engdata[,2]))
+rect.hclust(clus1, k=5, border="red")
+
+```
+
+## profiling the clusters
+```{r}
+
+?cutree
+
+engdata$Clusters <- cutree(clus1, k=5)
+
+View(engdata)
+
+aggr = aggregate(engdata[,-c(1,7)],list(engdata$Clusters),mean)
+aggr
+
+clus.profile <- data.frame( Cluster=aggr[,1],
+                            Freq=as.vector(table(engdata$Clusters)),
+                            aggr[,-1])
+
+View(clus.profile)
+```
+
+
+

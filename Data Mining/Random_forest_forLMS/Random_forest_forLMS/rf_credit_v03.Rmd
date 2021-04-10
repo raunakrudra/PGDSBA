@@ -1,0 +1,168 @@
+---
+title: "Credit - Random forest"
+output: html_notebook
+---
+
+ 
+#Set working directory and read csv file
+```{r}
+ setwd("C:\\Users\\jyoti\\OneDrive\\Documents\\PGPBABI\\Data Mining\\Random_forest_forLMS\\Random_forest_forLMS")
+creditdata = read.csv('g1.csv')
+str(creditdata)
+dim(creditdata)
+```
+
+#convert to categorical variable
+```{r}
+creditdata$CREDIT = as.factor(creditdata$CREDIT)
+```
+
+#Train test split
+```{r}
+## split into training and test sets
+library(caTools)
+
+set.seed(123)
+split = sample.split(creditdata$CREDIT, SplitRatio = 0.75)
+traindata = subset(creditdata, split == TRUE)
+testdata = subset(creditdata, split == FALSE)
+
+## Check if distribution of partition data is correct Testing dataset
+prop.table(table(traindata$CREDIT))
+prop.table(table(testdata$CREDIT))
+
+
+
+```
+
+
+```{r}
+dim(traindata)
+```
+
+
+
+#Run model with optimum hyper parameters
+```{r}
+mtry1 = sqrt(20) 
+mtry1
+
+?randomForest
+
+seed=420
+
+library(randomForest)
+set.seed(seed = 420)
+RF2<- randomForest(CREDIT ~ ., data = traindata, 
+                   ntree=500, mtry = 4,importance=TRUE, set.seed(420) )
+RF2
+
+
+
+```
+
+#Change the cut off 
+```{r}
+RF3<- randomForest(CREDIT ~ ., data = traindata, 
+                   ntree=500, mtry = 4,importance=TRUE, 
+                   cutoff=c(0.7,0.3),set.seed(420)  )
+RF3
+```
+
+#Variable importance plot
+```{r}
+varImpPlot(RF3)
+```
+
+
+#predict on test test
+```{r}
+## Predict using the RF model
+traindata$predict.class=predict(RF3,traindata,type="class")
+traindata$predict.score=predict(RF3,traindata)
+
+## Creating the confusion matrix
+tabtrain=with(traindata,table(CREDIT,predict.class))
+tabtrain
+```
+
+```{r}
+## Predict using the RF model
+testdata$predict.class=predict(RF3,testdata,type="class")
+testdata$predict.score=predict(RF3,testdata)
+
+## Creating the confusion matrix
+tabtest=with(testdata,table(CREDIT,predict.class))
+tabtest
+```
+
+#Model performance - train
+```{r}
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+```
+
+
+#Model performance - test
+```{r}
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+```
+
+```{r}
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+?rbind
+df_fin =rbind(df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test')
+df_fin
+```
+
+
+#ROC curve and AUC
+```{r}
+install.packages(pROC)
+library(pROC)
+traindata$predict.score=predict(RF3,traindata, type = "prob")
+traindata$predict.score
+roc_obj = roc(traindata$CREDIT, traindata$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+
+
+testdata$predict.score=predict(RF3,testdata, type = "prob")
+testdata$predict.score
+roc_obj = roc(testdata$CREDIT, testdata$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+```
+

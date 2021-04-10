@@ -1,0 +1,426 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+#Changing the column headers in input to remove spaces and read file again
+#Converting Personal loan, Securities Account, CD Account, Online and CreditCard to factor
+setwd("C:\\Users\\jyoti\\OneDrive\\Documents\\PGPBABI\\Data Mining\\Group assignment")
+loandt = read.csv('Thera Bank-Data Set.csv')
+str(loandt)
+dim(loandt)
+
+```
+
+```{r}
+loandt$PersonalLoan = as.factor(loandt$PersonalLoan)
+loandt$SecuritiesAccount = as.factor(loandt$SecuritiesAccount)
+loandt$CDAccount = as.factor(loandt$CDAccount)
+loandt$Online = as.factor(loandt$Online)
+loandt$CreditCard = as.factor(loandt$CreditCard)
+loandt$ZIPCode = as.factor(loandt$ZIPCode)
+loandt$Education = as.factor(loandt$Education)
+str(loandt)
+summary(loandt)
+table(loandt$PersonalLoan)
+```
+
+```{r}
+#Removing the ID column since it will not contribute
+loandt = loandt[, -c(1,5)]
+str(loandt)
+dim(loandt)
+View(loandt)
+```
+```{r}
+## Converting Education into ordered factors . Ordinal variable
+loandt$Education = factor(loandt$Education, levels = c("1", "2", "3"), order = TRUE)
+str(loandt)
+```
+
+```{r}
+##Taking abs values of Experience.
+loandt$Experience = abs(loandt$Experience)
+summary(loandt)
+```
+
+
+```{r}
+library(ggplot2)
+library(DataExplorer)
+plot_boxplot(loandt, by = "PersonalLoan", 
+             geom_boxplot_args = list("outlier.color" = "blue"))
+p1 = ggplot(loandt, aes(loandt$FamilyMembers, fill= loandt$PersonalLoan)) + geom_bar(alpha=0.4)
+p1
+any(is.na(loandt$FamilyMembers))
+loandt$FamilyMembers[is.na(loandt$FamilyMembers)] = 1
+loandt$FamilyMembers = factor(loandt$FamilyMembers, levels = c("1", "2", "3", "4"), order = TRUE)
+str(loandt)
+```
+
+```{r}
+#running Exploratory Data Analysis
+create_report(loandt)
+```
+```{r}
+## Plotting density plot for all numerical variables 
+plot_density(loandt, geom_density_args = list(fill="blue", alpha = 0.4))
+```
+
+
+```{r}
+plot_boxplot(loandt, by = "PersonalLoan",
+             geom_boxplot_args = list("outlier.color" = "red"))
+```
+
+
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+#p1 = ggplot(loandt, aes(loandt$Income, fill= loandt$PersonalLoan)) + geom_density(alpha=0.4)
+q1 = ggplot(data=loandt, aes(x=loandt$PersonalLoan, y=loandt$Income, fill=loandt$PersonalLoan))+geom_boxplot()
+q2 = ggplot(data=loandt, aes(x=loandt$PersonalLoan, y=loandt$Age, fill=loandt$PersonalLoan))+geom_boxplot()
+q3 = ggplot(data=loandt, aes(x=loandt$PersonalLoan, y=loandt$Experience, fill=loandt$PersonalLoan))+geom_boxplot()
+q4 = ggplot(data=loandt, aes(x=loandt$PersonalLoan, y=loandt$CCAvg, fill=loandt$PersonalLoan))+geom_boxplot()
+q5 = ggplot(data=loandt, aes(x=loandt$PersonalLoan, y=loandt$Mortgage, fill=loandt$PersonalLoan))+geom_boxplot()
+grid.arrange(q1, q2, q3, q4, q5, ncol = 2, nrow = 3)
+```
+
+
+```{r}
+b1 = ggplot(loandt, aes(fill=PersonalLoan, x=FamilyMembers, y=as.numeric(FamilyMembers))) +
+  geom_bar( stat="identity", position="fill")
+b2 = ggplot(loandt, aes(fill=PersonalLoan, x=Education, y=as.numeric(Education))) +
+  geom_bar( stat="identity", position="fill")
+b3 = ggplot(loandt, aes(fill=PersonalLoan, x=SecuritiesAccount, y=as.numeric(SecuritiesAccount))) +
+  geom_bar( stat="identity", position="fill")
+b4 = ggplot(loandt, aes(fill=PersonalLoan, x=CDAccount, y=as.numeric(CDAccount))) +
+  geom_bar( stat="identity", position="fill")
+b5 = ggplot(loandt, aes(fill=PersonalLoan, x=Online, y=as.numeric(Online))) +
+  geom_bar( stat="identity", position="fill")
+b6 = ggplot(loandt, aes(fill=PersonalLoan, x=CreditCard, y=as.numeric(CreditCard))) +
+  geom_bar( stat="identity", position="fill")
+grid.arrange(b1, b2, b3, b4, b5, b6, ncol = 2, nrow = 3)
+```
+
+
+```{r}
+#Creating scatterplt for numerical variables impacting field of interest.
+
+p1 = ggplot(loandt, aes(Income,y = CCAvg, color = PersonalLoan)) + 
+    geom_point(size = 1)
+p2 = ggplot(loandt, aes(Income,y = Mortgage, color = PersonalLoan)) + 
+    geom_point(size = 1)
+grid.arrange(p1, p2, ncol = 1, nrow = 2)
+```
+
+
+```{r}
+prop.table(table(loandt$PersonalLoan))
+## split into training and test sets
+library(caTools)
+
+set.seed(1233)
+split = sample.split(loandt$PersonalLoan, SplitRatio = 0.7)
+loandt.train = subset(loandt, split == TRUE)
+loandt.test = subset(loandt, split == FALSE)
+
+## Check if distribution of partition data is correct Testing dataset
+table(loandt.train$PersonalLoan)
+table(loandt.test$PersonalLoan)
+prop.table(table(loandt.train$PersonalLoan))
+prop.table(table(loandt.test$PersonalLoan))
+```
+
+
+```{r}
+##Build a fully grown tree with cp = 1, minsplit = 2, minbucket = 1
+
+library(rpart)
+library(rpart.plot)
+set.seed(420)
+
+tree_full = rpart(formula = PersonalLoan~., data = loandt.train, cp=-1, minsplit=2, minbucket=1)
+rpart.plot(tree_full, cex=0.4)
+print(tree_full)
+```
+
+
+```{r}
+##Predict on train data using the CART model and full tree
+loandt.train$predict.class=predict(tree_full,loandt.train,type="class")
+loandt.train$predict.score=predict(tree_full,loandt.train)
+View(loandt.train)
+
+```
+
+```{r}
+## Creating the confusion matrix for train data using full tree
+tabtrain=with(loandt.train,table(loandt.train$PersonalLoan,predict.class))
+tabtrain
+
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+```
+
+
+```{r}
+## Predict on test data using the CART model and full tree
+loandt.test$predict.class=predict(tree_full,loandt.test,type="class")
+loandt.test$predict.score=predict(tree_full,loandt.test)
+
+## Creating the confusion matrix
+tabtest=with(loandt.test,table(loandt.test$PersonalLoan,predict.class))
+tabtest
+
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+```
+
+```{r}
+#Creating a dataframe to compare train and test data scores
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+df_fin =rbind(df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test')
+df_fin
+
+```
+```{r}
+#initializing the prdict class and predict score before running other models.
+loandt.train$predict.class = NULL
+loandt.train$predict.score = NULL
+loandt.test$predict.class = NULL
+loandt.test$predict.score = NULL
+#df_fin <- df_fin[-c(3:4),]
+```
+
+```{r}
+#pruning the tree using minbucket and minsplit using R's default logic for visualizing the tree
+set.seed(420)
+
+tree_manual_prune=rpart(formula = PersonalLoan ~ ., data = loandt.train, method="class",control = rpart.control(minsplit = 75,  minbucket = 25))
+
+
+
+rpart.plot(tree_manual_prune, cex=0.8)
+print(tree_manual_prune)
+```
+
+
+```{r}
+#creating the confusion matrix for manual prune tree and attaching it to full tree matrix
+loandt.train$predict.class=predict(tree_manual_prune,loandt.train,type="class")
+loandt.train$predict.score=predict(tree_manual_prune,loandt.train)
+loandt.test$predict.class=predict(tree_manual_prune,loandt.test,type="class")
+loandt.test$predict.score=predict(tree_manual_prune,loandt.test)
+
+tabtrain=with(loandt.train,table(loandt.train$PersonalLoan,predict.class))
+tabtrain
+
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+
+tabtest=with(loandt.test,table(loandt.test$PersonalLoan,predict.class))
+tabtest
+
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+df_results_train
+df_results_test
+df_fin <- df_fin[-c(3:4),]
+df_fin
+
+?rbind
+df_fin =rbind(df_fin, df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test', 'tree_manual_train', 'tree_manual_test')
+df_fin
+
+```
+
+
+```{r}
+#prune using CP
+printcp(tree_full)
+plotcp(tree_full)
+
+bestcp=tree_full$cptable[which.min(tree_full$cptable[,"xerror"]),"CP"]
+bestcp
+
+
+ptree=prune(tree_full,cp=bestcp)
+print(ptree)
+rpart.plot(ptree, cex = 0.8)
+```
+
+```{r}
+#creating the confusion matrix for prune tree using the best cp
+loandt.train$predict.class=predict(ptree,loandt.train,type="class")
+loandt.train$predict.score=predict(ptree,loandt.train)
+loandt.test$predict.class=predict(ptree,loandt.test,type="class")
+loandt.test$predict.score=predict(ptree,loandt.test)
+
+tabtrain=with(loandt.train,table(loandt.train$PersonalLoan,predict.class))
+tabtrain
+
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+
+tabtest=with(loandt.test,table(loandt.test$PersonalLoan,predict.class))
+tabtest
+
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+df_results_train
+df_results_test
+#df_fin <- df_fin[-c(3:4),]
+df_fin
+
+?rbind
+df_fin =rbind(df_fin, df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test', 'tree_manual_train', 'tree_manual_test', 'ptree_train', 'ptree_test')
+df_fin
+```
+
+```{r}
+boxcols <- c("palegreen3", "orange")[tree_full$frame$yval]
+
+par(xpd=TRUE)
+prp(ptree, faclen = 0, cex = 0.6, extra = 1, box.col = boxcols)
+```
+
+```{r}
+#Variable importance
+library(caret)
+
+ptree$variable.importance
+
+df_cart=data.frame(round(ptree$variable.importance,2))
+df_cart
+write.csv(df_cart,"varimpcart.csv")
+```
+
+
+```{r}
+loandt.train$predict.class = NULL
+loandt.train$predict.score = NULL
+loandt.test$predict.class = NULL
+loandt.test$predict.score = NULL
+
+#Calculating AUC and KS for selected model
+loandt.train$predict.class=predict(tree_full,loandt.train,type="class")
+loandt.train$predict.score=predict(tree_full,loandt.train)
+
+View(loandt.train)
+
+library(pROC)
+roc_obj = roc(loandt.train$PersonalLoan, loandt.train$predict.score[,2])
+
+#plotting AUC
+plot(roc_obj, print.auc = T)
+```
+
+
+
+
+
+

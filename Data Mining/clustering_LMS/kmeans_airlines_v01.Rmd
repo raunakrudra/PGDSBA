@@ -1,0 +1,136 @@
+---
+title: "Customer segmentation using kmeans clustering"
+output: html_notebook
+---
+
+
+
+```{r}
+setwd("C:\\Users\\jyoti\\OneDrive\\Documents\\PGPBABI\\Data Mining\\clustering_LMS")
+airdata = read.csv("EastWestAirlinesCluster.csv")
+str(airdata)
+```
+
+
+
+
+##Scale data
+```{r}
+airscale = scale(airdata[,-c(1)])
+
+head(airscale)
+```
+
+
+
+
+
+## Identifying the optimal number of clusters using WSS (Within cluster Sums of Squares)
+```{r}
+install.packages("NbClust")
+install.packages("factoextra")
+library(NbClust)
+library(factoextra)
+
+?fviz_nbclust
+fviz_nbclust(airscale, kmeans, method = "wss") +
+  geom_vline(xintercept = 4, linetype = 2)+
+  labs(subtitle = "Elbow method")
+
+
+
+
+```
+
+
+
+#Kmeans clustering
+```{r}
+?kmeans
+set.seed(420)
+kc4 = kmeans(x=airscale, centers = 4)
+
+
+kc5 = kmeans(x=airscale, centers = 5)
+
+kc3 = kmeans(x=airscale, centers = 3)
+
+```
+
+
+```{r}
+kc3$size
+
+kc4$size
+
+
+kc5$size
+```
+
+
+
+```{r}
+airdata$kc5 <- kc5$cluster
+
+airdata$kc4 = kc4$cluster
+#View(empdata)
+
+
+write.csv(airdata, "airclus3.csv")
+```
+
+
+
+```{r}
+names(airdata)
+```
+
+
+
+##Visualising the cluster profiles for kc3 (3 clusters)
+```{r}
+#Convert certain variables to factors
+airdata$kc4 = factor(airdata$kc4)
+
+
+library(ggplot2)
+
+ggplot(data = airdata, aes(x=kc4, y=Balance, fill=kc4))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc4, y=Qual_miles, fill=kc4))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc4, y=cc1_miles, fill=kc4))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc4, y=Days_since_enroll, fill=kc4))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc4, y=Flight_trans_12, fill=kc4))+geom_boxplot()
+
+
+
+
+
+
+```
+
+
+
+```{r}
+#Convert certain variables to factors
+airdata$kc5 = factor(airdata$kc5)
+
+
+library(ggplot2)
+
+ggplot(data = airdata, aes(x=kc5, y=Balance, fill=kc5))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc5, y=Qual_miles, fill=kc5))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc5, y=cc1_miles, fill=kc5))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc5, y=Days_since_enroll, fill=kc5))+geom_boxplot()
+
+ggplot(data = airdata, aes(x=kc5, y=Flight_trans_12, fill=kc5))+geom_boxplot()
+
+```
+
+

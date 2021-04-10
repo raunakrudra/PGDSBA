@@ -1,0 +1,408 @@
+---
+title: "R Notebook"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+
+
+```{r}
+
+setwd("C:\\Users\\jyoti\\OneDrive\\Documents\\PGPBABI\\Data Mining")
+creditdata = read.csv('g1.csv')
+str(creditdata)
+dim(creditdata)
+```
+
+#Convert credit to categorical variable
+```{r}
+creditdata$CREDIT = as.factor(creditdata$CREDIT)
+names(creditdata)
+
+```
+
+#Find Baseline Y class %
+```{r}
+prop.table(table(creditdata$CREDIT))
+```
+
+
+### Exploratory data analysis - boxplot
+```{r}
+library(ggplot2)
+
+ggplot(data=creditdata, aes(x=CREDIT, y=DURATION, fill=CREDIT))+geom_boxplot()
+
+ggplot(data=creditdata, aes(x=CREDIT, y=AMOUNT, fill=CREDIT))+geom_boxplot()
+
+ggplot(data=creditdata, aes(x=CREDIT, y=AGE, fill=CREDIT))+geom_boxplot()
+
+
+
+```
+
+
+#Stacked bar plot for categorical variables
+```{r}
+ggplot(creditdata, aes(fill=CREDIT, x=CHECK_A, y=as.numeric(CHECK_A))) +
+  geom_bar( stat="identity", position="fill")
+
+ggplot(creditdata, aes(fill=CREDIT, x=CHECK_A, y=as.numeric(CHECK_A))) +
+  geom_bar( stat="identity")
+
+
+ggplot(creditdata, aes(fill=CREDIT, x=C_HIST, y=as.numeric(C_HIST))) +
+  geom_bar( stat="identity", position="fill")
+
+
+
+ggplot(creditdata, aes(fill=CREDIT, x=PURPOSE, y=as.numeric(PURPOSE))) +
+  geom_bar( stat="identity", position="fill")
+
+
+
+ggplot(creditdata, aes(fill=CREDIT, x=SAVE_A, y=as.numeric(SAVE_A))) +
+  geom_bar( stat="identity", position="fill")
+
+
+```
+
+
+
+```{r}
+## split into training and test sets
+library(caTools)
+
+set.seed(123)
+split = sample.split(creditdata$CREDIT, SplitRatio = 0.80)
+traindata = subset(creditdata, split == TRUE)
+testdata = subset(creditdata, split == FALSE)
+
+## Check if distribution of partition data is correct Testing dataset
+prop.table(table(creditdata$CREDIT))
+prop.table(table(creditdata$CREDIT))
+```
+
+Build a fully grown tree
+```{r}
+library(rpart)
+library(rpart.plot)
+set.seed(420)
+
+tree_full = rpart(formula = CREDIT~., data = traindata, cp=-1, minsplit=2, minbucket=1)
+rpart.plot(tree_full, cex=0.4)
+
+boxcols <- c("palegreen3", "orange")[tree_full$frame$yval]
+
+par(xpd=TRUE)
+prp(tree_full, faclen = 0, cex = 0.3, extra = 1, box.col = boxcols)
+```
+
+
+```{r}
+print(tree_full)
+```
+
+
+#predict on train and test set
+```{r}
+## Predict using the CART model
+traindata$predict.class=predict(tree_full,traindata,type="class")
+traindata$predict.score=predict(tree_full,traindata)
+
+## Creating the confusion matrix
+tabtrain=with(traindata,table(CREDIT,predict.class))
+tabtrain
+
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+```
+
+
+
+
+```{r}
+## Predict using the CART model
+testdata$predict.class=predict(tree_full,testdata,type="class")
+testdata$predict.score=predict(tree_full,testdata)
+
+## Creating the confusion matrix
+tabtest=with(testdata,table(CREDIT,predict.class))
+tabtest
+
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+```
+
+
+```{r}
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+?rbind
+df_fin =rbind(df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test')
+df_fin
+
+```
+
+
+#remove predicted score and class before running other models
+```{r}
+traindata$predict.class = NULL
+traindata$predict.score = NULL
+testdata$predict.class = NULL
+testdata$predict.score = NULL
+```
+
+
+
+
+#Pruning using minbucket and minsplit
+```{r}
+
+set.seed(123)
+?rpart
+
+tree_manual_prune=rpart(formula = CREDIT ~ ., data = traindata, method="class",control = rpart.control(minsplit = 50,  minbucket = 15))
+
+
+
+rpart.plot(tree_manual_prune, cex=0.8)
+```
+
+
+```{r}
+## Predict using the CART model
+traindata$predict.class=predict(tree_manual_prune,traindata,type="class")
+traindata$predict.score=predict(tree_manual_prune,traindata)
+
+## Creating the confusion matrix
+tabtrain=with(traindata,table(CREDIT,predict.class))
+tabtrain
+
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+```
+
+
+```{r}
+## Predict using the CART model
+testdata$predict.class=predict(tree_manual_prune,testdata,type="class")
+testdata$predict.score=predict(tree_manual_prune,testdata)
+
+## Creating the confusion matrix
+tabtest=with(testdata,table(CREDIT,predict.class))
+tabtest
+
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+```
+
+
+```{r}
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+?rbind
+df_fin =rbind(df_fin, df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test', 'tree_train', 'tree_test')
+df_fin
+```
+
+
+```{r}
+#remove predicted score and class before running other models
+traindata$predict.class = NULL
+traindata$predict.score = NULL
+testdata$predict.class = NULL
+testdata$predict.score = NULL
+```
+
+
+#Prune using cp
+```{r}
+
+printcp(tree_full)
+plotcp(tree_full)
+
+bestcp=tree_full$cptable[which.min(tree_full$cptable[,"xerror"]),"CP"]
+bestcp
+
+
+ptree=prune(tree_full,cp=bestcp)
+print(ptree)
+rpart.plot(ptree, cex = 0.8)
+```
+
+
+```{r}
+## Predict using the CART model
+traindata$predict.class=predict(ptree,traindata,type="class")
+traindata$predict.score=predict(ptree,traindata)
+
+## Creating the confusion matrix
+tabtrain=with(traindata,table(CREDIT,predict.class))
+tabtrain
+
+TN_train = tabtrain[1,1]
+TP_train = tabtrain[2,2]
+FN_train = tabtrain[2,1]
+FP_train = tabtrain[1,2]
+
+train_acc = (TN_train+TP_train)/(TN_train+TP_train+FN_train+FP_train)
+train_acc
+
+train_sens = TP_train/(TP_train+FN_train)
+train_sens
+
+
+train_spec = TN_train/(TN_train+FP_train)
+train_spec
+
+## Predict using the CART model
+testdata$predict.class=predict(ptree,testdata,type="class")
+testdata$predict.score=predict(ptree,testdata)
+
+## Creating the confusion matrix
+tabtest=with(testdata,table(CREDIT,predict.class))
+tabtest
+
+TN_test = tabtest[1,1]
+TP_test = tabtest[2,2]
+FN_test = tabtest[2,1]
+FP_test = tabtest[1,2]
+
+test_acc = (TN_test+TP_test)/(TN_test+TP_test+FN_test+FP_test)
+test_acc
+
+test_sens = TP_test/(TP_test+FN_test)
+test_sens
+
+
+test_spec = TN_test/(TN_test+FP_test)
+test_spec
+```
+
+
+```{r}
+df_results_train = data.frame(train_acc, train_sens, train_spec)
+names(df_results_train) = c("ACC", "SENS", "SPEC")
+df_results_test = data.frame(test_acc, test_sens, test_spec)
+names(df_results_test) = c("ACC", "SENS", "SPEC")
+
+?rbind
+df_fin =rbind(df_fin, df_results_train, df_results_test)
+row.names(df_fin) = c('tree_full_train', 'tree_full_test', 'tree_train', 'tree_test', 'ptree_train', 'ptree_test')
+round(df_fin,2)
+```
+#Best result from tree with manual pruning
+
+
+
+```{r}
+boxcols <- c("palegreen3", "orange")[tree_full$frame$yval]
+
+par(xpd=TRUE)
+prp(ptree, faclen = 0, cex = 0.6, extra = 1, box.col = boxcols)
+
+
+
+```
+
+
+
+```{r}
+#Variable importance
+library(caret)
+
+ptree$variable.importance
+
+df_cart=data.frame(round(ptree$variable.importance,2))
+df_cart
+write.csv(df_cart,"varimpcart.csv")
+```
+
+
+```{r}
+traindata$predict.class = NULL
+traindata$predict.score = NULL
+testdata$predict.class = NULL
+testdata$predict.score = NULL
+```
+
+
+
+#Calculate AUC and KS with best model
+```{r}
+## Predict using the CART model
+traindata$predict.class=predict(tree_manual_prune,traindata,type="class")
+traindata$predict.score=predict(tree_manual_prune,traindata)
+
+View(traindata)
+
+```
+
+
+```{r}
+library(pROC)
+roc_obj = roc(traindata$CREDIT, traindata$predict.score[,2])
+
+
+plot(roc_obj, print.auc = T)
+```
+
+

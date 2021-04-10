@@ -1,0 +1,43 @@
+---
+title: "Calculating distances"
+output: html_notebook
+---
+
+
+```{r}
+setwd("C:\\Users\\jyoti\\OneDrive\\Documents\\PGPBABI\\Data Mining\\clustering_LMS")
+coord = read.csv("coord.csv")
+coord
+str(coord)
+```
+
+#Lets plot the points
+```{r}
+library(ggplot2)
+
+ggplot(data=coord,aes(x=x, y=y, col=Sno))+
+  geom_point(size=6)+
+  geom_text(size=6, aes(label=Sno))
+
+
+ggplot(data=coord,aes(x=x, y=y, col=Sno))+
+  geom_point(size=6)+
+  geom_label(size=4, aes(label=Sno))
+```
+
+
+
+```{r}
+dist_euc = dist(coord[,2:3], method = "euclidean")
+round(dist_euc,0)
+
+```
+
+
+```{r}
+dist_man = dist(coord[,2:3], method = "manhattan")
+round(dist_man,0)
+```
+
+
+
