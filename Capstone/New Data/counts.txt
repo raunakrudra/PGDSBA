@@ -1,0 +1,36 @@
+2018-19 - 1013350
+2016-17 - 877987
+2007-2015 - 887443
+
+SUM([Total]) / TOTAL(SUM([Total]))
+
+issue_d
+loan_status
+dti
+open_acc
+pub_rec
+revol_bal
+initial_list_status
+application_type
+
+
+     loan_amnt            883760 non-null  float64
+ 1   term                 883760 non-null  object 
+ 2   installment          883760 non-null  float64
+ 3   home_ownership       883760 non-null  object 
+ 4   annual_inc           883760 non-null  float64
+ 5   verification_status  883760 non-null  object 
+ 6   loan_status          883760 non-null  object 
+ 7   purpose              883760 non-null  object 
+ 8   addr_state           883760 non-null  object 
+ 9   dti                  883760 non-null  float64
+ 10  delinq_2yrs          883760 non-null  float64
+ 11  open_acc             883760 non-null  float64
+ 12  pub_rec              883760 non-null  float64
+ 13  revol_bal            883760 non-null  float64
+ 14  total_acc            883760 non-null  float64
+ 15  initial_list_status  883760 non-null  object 
+ 16  application_type     883760 non-null  object 
+ 17  mort_acc             883760 non-null  float64
+ 18  loan_age             883760 non-null  int32  
+ 19  fico_value           883760 non-null  float64
